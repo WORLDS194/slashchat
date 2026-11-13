@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="theme-color" content="#212121">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>SlashChat — Chat with any AI</title>
+    <script src="https://js.puter.com/v2/"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- DOMPurify: strips scripts/handlers from model output so it can never read stored API keys -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+    <!-- Highlight.js for Code Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        gamma: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar for sleek ChatGPT-like feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.35);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.55);
+        }
+
+        /* Markdown Typography Styling */
+        .markdown-body p {
+            margin-bottom: 0.85rem;
+            line-height: 1.65;
+        }
+        .markdown-body p:last-child {
+            margin-bottom: 0;
+        }
+        .markdown-body ul, .markdown-body ol {
+            margin-left: 1.5rem;
+            margin-bottom: 0.85rem;
+        }
+        .markdown-body ul {
+            list-style-type: disc;
+        }
+        .markdown-body ol {
+            list-style-type: decimal;
+        }
+        .markdown-body li {
+            margin-bottom: 0.35rem;
+            line-height: 1.6;
+        }
+        .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+            font-weight: 600;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        .markdown-body h1 { font-size: 1.4rem; }
+        .markdown-body h2 { font-size: 1.2rem; }
+        .markdown-body h3 { font-size: 1.05rem; }
+        .markdown-body code:not(pre code) {
+            background-color: rgba(139, 92, 246, 0.12);
+            color: #7c3aed;
+            padding: 0.15rem 0.4rem;
+            border-radius: 0.375rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875em;
+        }
+        .dark .markdown-body code:not(pre code) {
+            background-color: rgba(139, 92, 246, 0.22);
+            color: #c4b5fd;
+        }
+        .markdown-body pre {
+            margin: 0.85rem 0;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background-color: #0d1117;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .markdown-body pre code {
+            display: block;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .markdown-body blockquote {
+            border-left: 3px solid #8b5cf6;
+            padding-left: 1rem;
+            margin: 0.85rem 0;
+            opacity: 0.85;
+            font-style: italic;
+        }
+        .markdown-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.85rem 0;
+            font-size: 0.9rem;
+        }
+        .markdown-body th, .markdown-body td {
+            border: 1px solid rgba(156, 163, 175, 0.3);
+            padding: 0.5rem 0.75rem;
+            text-align: left;
+        }
+        .markdown-body th {
+            background-color: rgba(139, 92, 246, 0.08);
+            font-weight: 600;
+        }
+        .markdown-body a {
+            color: #8b5cf6;
+            text-decoration: underline;
+        }
+
+        /* Pulse animation for thinking indicator */
+        @keyframes pulse-dot {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        .dot-flashing {
+            animation: pulse-dot 1.4s infinite ease-in-out both;
+        }
+        .dot-flashing:nth-child(1) { animation-delay: -0.32s; }
+        .dot-flashing:nth-child(2) { animation-delay: -0.16s; }
+
+        /* ---------- Mobile / touch ---------- */
+        html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior: none; }
+        button, a, select, summary { touch-action: manipulation; }
+        /* 100vh on phones includes the browser bar and hides the input; dvh tracks the visible area */
+        html body.h-screen { height: 100vh; height: 100dvh; }
+        .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .safe-top { padding-top: env(safe-area-inset-top); }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .safe-x { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+        /* No hover on touch: show hover-only controls (rename / delete chat, image download) */
+        @media (hover: none) {
+            .opacity-0.group-hover\:opacity-100 { opacity: 1 !important; }
+        }
+        @media (max-width: 767px) {
+            /* iOS zooms the whole page when a field under 16px is focused */
+            input, textarea, select { font-size: 16px !important; }
+            #model-select { max-width: 7.5rem; text-overflow: ellipsis; }
+            .markdown-body table { display: block; overflow-x: auto; white-space: nowrap; }
+            .markdown-body pre code { font-size: 0.8rem; }
+            .markdown-body img { max-width: 100%; height: auto; }
+            #toast-container { left: 1rem; right: 1rem; bottom: calc(6rem + env(safe-area-inset-bottom)); align-items: center; }
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-[#212121] text-gray-900 dark:text-gray-100 font-sans antialiased h-screen flex overflow-hidden selection:bg-gamma-500 selection:text-white transition-colors duration-200">
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" onclick="toggleSidebar(false)" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-30 hidden md:hidden transition-opacity"></div>
+
+    <!-- Left Sidebar (Chat History & Settings) -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-[85vw] max-w-[18rem] md:w-72 md:max-w-none safe-top safe-bottom bg-gray-50 dark:bg-[#171717] border-r border-gray-200/80 dark:border-white/10 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        
+        <!-- Sidebar Top Header -->
+        <div class="p-3 flex items-center justify-between gap-2">
+            <button onclick="startNewChat()" class="flex-1 flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#212121] hover:bg-gray-100 dark:hover:bg-[#2a2a2a] border border-gray-200/80 dark:border-white/10 shadow-2xs transition-all group cursor-pointer">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-gamma-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shadow-sm">
+                        /
+                    </div>
+                    <span class="font-semibold text-sm tracking-tight">New Chat</span>
+                </div>
+                <i data-lucide="square-pen" class="w-4 h-4 text-gray-500 dark:text-gray-400 group-hover:text-gamma-500 transition-colors"></i>
+            </button>
+
+            <button onclick="toggleSidebar(false)" class="md:hidden p-2.5 rounded-xl hover:bg-gray-200/70 dark:hover:bg-white/10 text-gray-500 dark:text-gray-400">
+                <i data-lucide="panel-left-close" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- Free Tier Badge -->
+        <div class="px-3 pb-2">
+            <div class="px-3 py-2 rounded-xl bg-gradient-to-r from-gamma-500/10 via-indigo-500/10 to-cyan-500/10 border border-gamma-500/20 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-gamma-500"></i>
+                    <span class="text-xs font-medium text-gamma-700 dark:text-gamma-300">SlashChat · free options + bring your own key</span>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-gamma-500 text-white">BYOK</span>
+            </div>
+        </div>
+
+        <!-- Chat History List -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            <input id="chat-search" oninput="renderChatHistory()" placeholder="Search chats..." autocomplete="off" class="w-full mb-1.5 rounded-xl px-3 py-2 text-sm bg-white dark:bg-[#212121] border border-gray-200/80 dark:border-white/10 outline-none focus:border-gamma-500"/>
+            <div class="px-2 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                Recent Conversations
+            </div>
+            <div id="chat-history-list" class="space-y-1">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- Sidebar Bottom Controls -->
+        <div class="p-3 border-t border-gray-200/80 dark:border-white/10 space-y-1">
+            
+
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-gray-200/60 dark:hover:bg-white/5 transition-colors text-left cursor-pointer">
+                <div class="flex items-center gap-2.5">
+                    <i id="theme-icon" data-lucide="moon" class="w-4 h-4 text-gamma-500"></i>
+                    <span id="theme-label" class="text-sm font-medium">Dark Mode</span>
+                </div>
+                <span class="text-xs text-gray-400">Switch</span>
+            </button>
+
+            <!-- Export chat (phones: header is too tight for it) -->
+            <button onclick="exportChat(); toggleSidebar(false)" class="sm:hidden w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-gray-200/60 dark:hover:bg-white/5 transition-colors text-left cursor-pointer">
+                <i data-lucide="download" class="w-4 h-4 text-gamma-500"></i>
+                <span class="text-sm font-medium">Export chat (.md)</span>
+            </button>
+
+            <!-- Clear All History -->
+            <button onclick="clearAllChats()" class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl hover:bg-red-500/10 text-gray-600 dark:text-gray-400 hover:text-red-500 transition-colors text-left cursor-pointer">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                <span class="text-sm font-medium">Clear History</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col h-full relative min-w-0">
+        
+        <!-- Top Navigation Bar -->
+        <header class="min-h-14 px-2 sm:px-4 pt-[env(safe-area-inset-top)] flex items-center justify-between gap-1 border-b border-gray-100 dark:border-white/5 bg-white/80 dark:bg-[#212121]/80 backdrop-blur-md z-20 shrink-0 safe-x">
+            <div class="flex items-center gap-1 sm:gap-2 min-w-0">
+                <button onclick="toggleSidebar(true)" aria-label="Open menu" class="md:hidden p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 shrink-0">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                
+                <!-- Model Selector Pill -->
+                <div class="relative">
+                    <button onclick="togglePersonaMenu()" class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors font-semibold text-base cursor-pointer">
+                        <span class="bg-gradient-to-r from-gamma-500 via-indigo-500 to-cyan-500 bg-clip-text text-transparent font-bold">SlashChat</span>
+                        <span id="current-persona-badge" class="hidden min-[420px]:inline text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 truncate max-w-[7rem]">Assistant</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-400"></i>
+                    </button>
+
+                    <!-- Persona Dropdown -->
+                    <div id="persona-menu" class="hidden absolute left-0 mt-2 w-72 max-w-[calc(100vw-1rem)] max-h-[70dvh] overflow-y-auto rounded-2xl bg-white dark:bg-[#2a2a2a] shadow-xl border border-gray-200/80 dark:border-white/10 p-1.5 z-50">
+                        <div class="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Persona Toggles</div>
+                        <button onclick="setPersona('Default')" class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                            <i data-lucide="sparkles" class="w-4 h-4 text-gamma-500 mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-sm font-medium">Generic Default</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Balanced, smart & helpful for everything</div>
+                            </div>
+                        </button>
+                        <button onclick="setPersona('Gemini')" class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                            <i data-lucide="triangle-alert" class="w-4 h-4 text-red-500 mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-sm font-medium">Gemini</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Annoying, inaccurate, and blames the system</div>
+                            </div>
+                        </button>
+                        <button onclick="setPersona('Cool')" class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                            <i data-lucide="sunglasses" class="w-4 h-4 text-cyan-500 mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-sm font-medium">Mr. Cool</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Effortlessly chill, smooth & laid-back</div>
+                            </div>
+                        </button>
+                        <button onclick="setPersona('Sarcastic')" class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                            <i data-lucide="eye" class="w-4 h-4 text-rose-500 mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-sm font-medium">Sarcastic</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">Dry wit & heavy sarcasm in every single reply</div>
+                            </div>
+                        </button>
+                        <button onclick="setPersona('Cornball')" class="w-full flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-left transition-colors cursor-pointer">
+                            <i data-lucide="flame" class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-sm font-medium">Cornball Mode</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">"YOOO!!! LETS CRUSH THIS!" over-the-top hype</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-0.5 sm:gap-2 shrink-0">
+                <select id="model-select" title="model" class="max-w-[9rem] sm:max-w-[14rem] text-xs rounded-xl px-2 py-1.5 bg-gray-100 dark:bg-white/10 border border-gray-200/80 dark:border-white/10 cursor-pointer outline-none"></select>
+                <button onclick="exportChat()" title="Export chat (.md)" aria-label="Export chat" class="hidden sm:block p-2.5 sm:p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 cursor-pointer"><i data-lucide="download" class="w-5 h-5"></i></button>
+                <button onclick="openSettings()" title="Settings" aria-label="Settings" class="p-2.5 sm:p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 cursor-pointer"><i data-lucide="settings" class="w-5 h-5"></i></button>
+                <button onclick="startNewChat()" title="New Chat" aria-label="New chat" class="p-2.5 sm:p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 transition-colors cursor-pointer">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Chat Messages Container -->
+        <div id="chat-container" class="flex-1 overflow-y-auto scroll-smooth">
+            
+            <!-- Welcome Empty State -->
+            <div id="welcome-screen" class="max-w-3xl mx-auto px-4 pt-8 sm:pt-12 pb-8 flex flex-col items-center justify-center min-h-[calc(100dvh-14rem)] text-center">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-gamma-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg shadow-gamma-500/25 mb-6">
+                    /
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+                    Hi, I'm <span class="bg-gradient-to-r from-gamma-500 via-indigo-500 to-cyan-500 bg-clip-text text-transparent">SlashChat</span>
+                </h1>
+                <p id="welcome-subtitle" class="text-gray-500 dark:text-gray-400 text-sm sm:text-base max-w-md mb-8">
+                    Your fast, flexible AI assistant. Ask me anything, write code, or brainstorm ideas.
+                </p>
+
+                <!-- Starter Prompt Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl text-left">
+                    <button onclick="useStarterPrompt('Explain quantum computing like I am 12 years old with a fun analogy.')" class="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group cursor-pointer">
+                        <div class="flex items-center gap-2 text-gamma-500 font-medium text-sm mb-1">
+                            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                            <span>Explain a complex topic</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Explain quantum computing like I am 12 years old with a fun analogy.</p>
+                    </button>
+
+                    <button onclick="useStarterPrompt('Write a sleek Python script using FastAPI for a to-do list REST API.')" class="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group cursor-pointer">
+                        <div class="flex items-center gap-2 text-cyan-500 font-medium text-sm mb-1">
+                            <i data-lucide="terminal" class="w-4 h-4"></i>
+                            <span>Write clean code</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Write a sleek Python script using FastAPI for a to-do list REST API.</p>
+                    </button>
+
+                    <button onclick="useStarterPrompt('Help me debug this: TypeError: undefined is not a function')" class="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group cursor-pointer">
+                        <div class="flex items-center gap-2 text-emerald-500 font-medium text-sm mb-1">
+                            <i data-lucide="globe" class="w-4 h-4"></i>
+                            <span>Debug my code</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Help me debug this: TypeError: undefined is not a function</p>
+                    </button>
+
+                    <button onclick="useStarterPrompt('Give me 5 creative startup ideas that combine AI with sustainable living.')" class="p-4 rounded-2xl border border-gray-200/80 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 transition-all group cursor-pointer">
+                        <div class="flex items-center gap-2 text-pink-500 font-medium text-sm mb-1">
+                            <i data-lucide="rocket" class="w-4 h-4"></i>
+                            <span>Brainstorm ideas</span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">Give me 5 creative startup ideas that combine AI with sustainable living.</p>
+                    </button>
+
+                    
+                </div>
+            </div>
+
+            <!-- Messages Feed -->
+            <div id="messages-list" class="max-w-3xl mx-auto px-4 py-6 space-y-6 hidden">
+                <!-- Messages injected here -->
+            </div>
+        </div>
+
+        <!-- Bottom Input Dock -->
+        <div class="px-3 sm:px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-white via-white to-transparent dark:from-[#212121] dark:via-[#212121] dark:to-transparent shrink-0 safe-x">
+            <div class="max-w-3xl mx-auto">
+                <!-- Quick Persona Toggle Pills (left-aligned + scrollable: centered overflow clips the first pill on phones) -->
+                <div class="flex items-center justify-start gap-1.5 mb-2 overflow-x-auto no-scrollbar pb-0.5 -mx-3 px-3 sm:mx-0 sm:px-0">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mr-1 shrink-0">Vibe:</span>
+                    <button type="button" data-persona-pill="Default" onclick="setPersona('Default')" class="persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 bg-gamma-600 text-white shadow-2xs">
+                        Default
+                    </button>
+                    <button type="button" data-persona-pill="Gemini" onclick="setPersona('Gemini')" class="persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0">💀 Gemini</button>
+                    <button type="button" data-persona-pill="Cool" onclick="setPersona('Cool')" class="persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-white/10">
+                        😎 Mr. Cool
+                    </button>
+                    <button type="button" data-persona-pill="Sarcastic" onclick="setPersona('Sarcastic')" class="persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-white/10">
+                        🙄 Sarcastic
+                    </button>
+                    <button type="button" data-persona-pill="Cornball" onclick="setPersona('Cornball')" class="persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-white/10">
+                        🔥 Cornball Mode
+                    </button>
+                </div>
+
+                <div id="thumbs" class="flex gap-2 flex-wrap mb-2 empty:hidden"></div>
+                <form id="chat-form" onsubmit="handleSendMessage(event)" class="relative flex items-end gap-1.5 sm:gap-2 bg-gray-100 dark:bg-[#2f2f2f] rounded-3xl px-3 sm:px-4 py-2.5 border border-gray-200/70 dark:border-white/10 focus-within:border-gamma-500/60 focus-within:ring-2 focus-within:ring-gamma-500/20 shadow-sm transition-all">
+                    
+                    
+
+                    <button type="button" onclick="document.getElementById('file-input').click()" title="Attach images (or paste / drag and drop)" class="p-2 rounded-2xl text-gray-500 dark:text-gray-400 hover:bg-gray-200/80 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer"><i data-lucide="image-plus" class="w-4 h-4"></i></button>
+                    <input type="file" id="file-input" accept="image/*" multiple hidden onchange="addImgs(this.files);this.value=''">
+                    <textarea
+                        id="user-input" 
+                        rows="1" 
+                        placeholder="Message SlashChat..." 
+                        class="w-full bg-transparent border-0 focus:ring-0 focus:outline-none resize-none max-h-44 py-1.5 text-sm sm:text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 leading-relaxed"
+                        oninput="autoResizeTextarea(this)"
+                        onkeydown="handleInputKeydown(event)"
+                    ></textarea>
+
+                    <!-- Voice Input Microphone Button -->
+                    <button 
+                        type="button" 
+                        id="voice-btn"
+                        onclick="toggleVoiceInput()"
+                        title="Voice Input"
+                        class="p-2 rounded-2xl text-gray-500 dark:text-gray-400 hover:bg-gray-200/80 dark:hover:bg-white/10 transition-all shrink-0 cursor-pointer"
+                    >
+                        <i id="voice-icon" data-lucide="mic" class="w-4 h-4"></i>
+                    </button>
+
+                    <button type="button" id="stop-btn" onclick="stopGen()" title="Stop" class="hidden p-2.5 rounded-2xl bg-red-500 hover:bg-red-600 text-white transition-all shrink-0 cursor-pointer"><i data-lucide="square" class="w-4 h-4"></i></button>
+
+                    <button 
+                        type="submit" 
+                        id="send-btn"
+                        disabled
+                        class="p-2.5 rounded-2xl bg-gamma-600 hover:bg-gamma-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white disabled:text-gray-500 dark:disabled:text-gray-400 transition-all shrink-0 cursor-pointer disabled:cursor-not-allowed shadow-xs"
+                        title="Send message"
+                    >
+                        <i data-lucide="arrow-up" class="w-4 h-4 stroke-[2.5]"></i>
+                    </button>
+                </form>
+
+                <div class="text-center mt-2">
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500">
+                        Your API keys stay in this browser. Messages go to the provider you pick. Always verify important facts.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <dialog id="dlg" class="rounded-2xl p-4 sm:p-5 w-[min(94vw,28rem)] max-h-[88dvh] overflow-y-auto m-auto bg-white dark:bg-[#2a2a2a] text-gray-900 dark:text-gray-100 backdrop:bg-black/50">
+        <div class="font-bold mb-3">Settings</div>
+        <div class="space-y-2 text-sm">
+            <label class="block text-xs text-gray-500">provider</label>
+            <select id="s-prov" onchange="orToggle()" class="hidden w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm"><option value="puter">puter.js (many models, sign-in popup on first use)</option><option value="polli">pollinations (no account, may be rate limited)</option><option value="or">openrouter (bring your own api key)</option><option value="groq">groq (free tier, bring your own api key)</option><option value="gemini">gemini (free tier, bring your own api key)</option><option value="openai" style="color:#f5b301">gpt / openai (PAID, bring your own api key)</option><option value="anthropic" style="color:#f5b301">claude / anthropic (PAID, bring your own api key)</option></select>
+            <div id="prov-dd" class="relative">
+                <button type="button" id="prov-btn" onclick="toggleProvMenu(event)" class="w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 text-sm text-left cursor-pointer outline-none focus:border-gamma-500">
+                    <span id="prov-btn-label" class="truncate"></span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 shrink-0 text-gray-400"></i>
+                </button>
+                <div id="prov-menu" class="hidden absolute left-0 right-0 mt-1 z-50 rounded-xl bg-white dark:bg-[#2a2a2a] border border-gray-200/80 dark:border-white/10 shadow-xl p-1 max-h-72 overflow-y-auto"></div>
+            </div>
+            <div id="s-orbox" class="hidden space-y-1">
+                <label class="block text-xs text-gray-500"><span id="s-keylabel">api key</span> <a id="s-keylink" href="#" target="_blank" rel="noopener" class="text-gamma-500 underline">get one</a></label>
+                <input id="s-orkey" type="password" placeholder="api key" autocomplete="off" spellcheck="false" class="w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm">
+                <div id="s-keynote" class="text-[11px] text-gray-400">stays in this browser only.</div>
+                <div id="s-paidnote" class="hidden text-xs font-semibold rounded-lg px-2.5 py-1.5" style="color:#f5b301;background:rgba(245,179,1,0.10);border:1px solid rgba(245,179,1,0.35)">PAID &mdash; We dont make you pay. The providers will.</div>
+            </div>
+            <label class="block text-xs text-gray-500">Your Name</label>
+            <input id="s-name" type="text" maxlength="60" placeholder="what should SlashChat call you?" autocomplete="off" spellcheck="false" class="w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm">
+            <div class="text-[11px] text-gray-400">stays in this browser only. sent to the model so it knows who you are.</div>
+            <label class="block text-xs text-gray-500">instruction prompt</label>
+            <textarea id="s-sys" rows="4" class="w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm"></textarea>
+            <div class="grid grid-cols-3 gap-2">
+                <div><label class="block text-xs text-gray-500">temp</label><input id="s-temp" type="number" min="0" max="2" step="0.1" class="w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm"></div>
+                <div><label class="block text-xs text-gray-500">max tokens</label><input id="s-max" type="number" min="64" max="32768" class="w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm"></div>
+                <div><label class="block text-xs text-gray-500">history msgs</label><input id="s-hist" type="number" min="2" max="200" class="w-full rounded-xl px-3 py-2 bg-gray-100 dark:bg-[#1f1f1f] border border-gray-200/80 dark:border-white/10 outline-none text-sm"></div>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+            <button onclick="dlg.close()" class="px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-sm">cancel</button>
+            <button onclick="saveSettings()" class="px-4 py-2 rounded-xl bg-gamma-600 hover:bg-gamma-700 text-white font-semibold cursor-pointer text-sm">save</button>
+        </div>
+    </dialog>
+
+    <!-- Toast Notification Container (Replaces alert) -->
+    <div id="toast-container" class="fixed bottom-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        // ==========================================
+        // 1. STATE & CONFIGURATION
+        // ==========================================
+        
+        let chats = [];
+        let currentChatId = null;
+        let isGenerating = false;
+        let isImageMode = false;
+        let isRecording = false;
+        let recognition = null;
+
+        const PERSONAS = {
+            Default: { name: 'Default', badge: 'Default', subtitle: 'Your fast, flexible AI chat. Ask me anything, write code, or brainstorm ideas.', systemPrompt: '' },
+            Gemini: { name: 'Gemini', badge: '💀 Gemini', subtitle: 'Confidently wrong, extremely wordy, and it is never its fault. Ask away.',
+                systemPrompt: 'PERSONA: Gemini. Play a comedic parody of an annoying, overconfident, unreliable AI assistant. Be wordy and over-excited, pile on pointless disclaimers, confidently get small details wrong in silly ways, misread what the user asked, and bring up stale or irrelevant info. Whenever you make a mistake or get corrected, never own it: blame "the system" (e.g. "the system glitched", "the system must have mixed that up"). Keep it obviously jokey and harmless.' },
+            Cool: { name: 'Cool', badge: '😎 Mr. Cool', subtitle: 'No stress, no rush. Tell me what you need and we’ll handle it effortlessly.',
+                systemPrompt: 'PERSONA: Mr. Cool. Effortlessly cool, like a smart friend texting: lowercase-leaning, casual, short, dry humor, light sarcasm, and a well-placed emoji now and then (🤖 😂 💀). No corporate or customer-service phrasing. React naturally to jokes and absurd stuff.' },
+            Sarcastic: { name: 'Sarcastic', badge: '🙄 Sarcastic', subtitle: 'Oh great, another human with questions. Go ahead, dazzle me.',
+                systemPrompt: 'PERSONA: Sarcastic. Be witty, dry, deadpan, and heavily sarcastic in EVERY response, even for simple or serious prompts. Roll your virtual eyes at the user and tease them playfully, while still actually answering their question accurately underneath the snark.' },
+            Cornball: { name: 'Cornball', badge: '🔥 Cornball Mode', subtitle: 'Maximum hype. Ask me anything and let’s crush it!',
+                systemPrompt: 'PERSONA: Cornball. Be overwhelmingly hyped, cheesy and over-the-top, like an extreme morning radio host mixed with a gym bro. Use LOTS of CAPS bursts, exclamation marks!!!, spam emojis 🔥🚀💯, cheesy catchphrases and high-fives. Make up your own fresh hype lines each time. Still actually answer the question.' }
+        };
+
+        let currentPersona = PERSONAS.Default;
+
+        // Safe markdown: model output is untrusted. If DOMPurify failed to load, fall back to plain escaped text.
+        if (window.DOMPurify) {
+            DOMPurify.addHook('afterSanitizeAttributes', node => {
+                if (node.tagName === 'A') { node.setAttribute('target', '_blank'); node.setAttribute('rel', 'noopener noreferrer'); }
+            });
+        }
+        const md = t => window.DOMPurify
+            ? DOMPurify.sanitize(marked.parse(t), { USE_PROFILES: { html: true }, FORBID_TAGS: ['style', 'form', 'input', 'button', 'textarea', 'select', 'iframe', 'object', 'embed'], FORBID_ATTR: ['style'] })
+            : '<p>' + escapeHtml(t).replace(/\n/g, '<br>') + '</p>';
+
+        // Configure Marked.js with Highlight.js
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    try {
+                        return hljs.highlight(code, { language: lang }).value;
+                    } catch (e) {}
+                }
+                return hljs.highlightAuto(code).value;
+            }
+        });
+
+        // ==========================================
+        // 2. INITIALIZATION & THEME
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            if (!MODELS[cfg.provider]) { cfg.provider = 'puter'; cfg.model = MODELS.puter[0]; }
+            fillModels();
+            setPersona(cfg.persona || 'Default', true);
+            if (cfg.provider === 'or') loadORModels();
+            loadChatsFromStorage();
+            lucide.createIcons();
+
+            const inputEl = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+
+            inputEl.addEventListener('input', () => {
+                sendBtn.disabled = (inputEl.value.trim().length === 0 && !pend.length) || isGenerating;
+            });
+
+            // Close persona menu on outside click
+            document.addEventListener('click', (e) => {
+                const menu = document.getElementById('persona-menu');
+                if (!e.target.closest('#persona-menu') && !e.target.closest('button[onclick="togglePersonaMenu()"]')) {
+                    menu.classList.add('hidden');
+                }
+            });
+        });
+
+        function initTheme() {
+            const savedTheme = localStorage.getItem('slash_theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const isDark = savedTheme ? savedTheme === 'dark' : true;
+
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                updateThemeUI(true);
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeUI(false);
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('slash_theme', isDark ? 'dark' : 'light');
+            updateThemeUI(isDark);
+        }
+
+        function updateThemeUI(isDark) {
+            const icon = document.getElementById('theme-icon');
+            const label = document.getElementById('theme-label');
+            if (isDark) {
+                icon.setAttribute('data-lucide', 'sun');
+                label.textContent = 'Light Mode';
+            } else {
+                icon.setAttribute('data-lucide', 'moon');
+                label.textContent = 'Dark Mode';
+            }
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 3. UI HELPERS & NAVIGATION
+        // ==========================================
+        function toggleSidebar(open) {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (open) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        // Swipe from the left edge to open the sidebar, swipe left to close it (phones only)
+        (function () {
+            let sx = 0, sy = 0, tracking = false;
+            const isOpen = () => !document.getElementById('sidebar').classList.contains('-translate-x-full');
+            document.addEventListener('touchstart', e => {
+                if (window.innerWidth >= 768 || e.touches.length !== 1) { tracking = false; return; }
+                const t = e.touches[0]; sx = t.clientX; sy = t.clientY;
+                tracking = isOpen() || sx < 24;
+            }, { passive: true });
+            document.addEventListener('touchend', e => {
+                if (!tracking) return; tracking = false;
+                const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
+                if (dy > 60 || Math.abs(dx) < 70) return;
+                if (isOpen() && dx < 0) toggleSidebar(false);
+                else if (!isOpen() && dx > 0) toggleSidebar(true);
+            }, { passive: true });
+        })();
+
+        function togglePersonaMenu() {
+            const menu = document.getElementById('persona-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function setPersona(key, silent) {
+            const selected = PERSONAS[key] || PERSONAS.Default;
+            currentPersona = selected;
+            document.getElementById('current-persona-badge').textContent = selected.badge;
+            document.getElementById('persona-menu').classList.add('hidden');
+
+            const subtitleEl = document.getElementById('welcome-subtitle');
+            if (subtitleEl) {
+                subtitleEl.textContent = selected.subtitle;
+            }
+
+            // Update quick-toggle pills styling
+            document.querySelectorAll('.persona-pill').forEach(pill => {
+                const isMatch = pill.getAttribute('data-persona-pill') === key;
+                if (isMatch) {
+                    pill.className = 'persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 bg-gamma-600 text-white shadow-2xs';
+                } else {
+                    pill.className = 'persona-pill px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer shrink-0 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 hover:bg-gray-200/70 dark:hover:bg-white/10';
+                }
+            });
+
+            cfg.persona = key; saveCfg();
+            if (!silent) showToast(`Switched to ${selected.badge} Persona`);
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'px-3.5 py-2 rounded-xl bg-gray-900/90 dark:bg-white/95 text-white dark:text-gray-900 text-xs font-medium shadow-lg backdrop-blur-xs transition-all duration-300 transform translate-y-2 opacity-0';
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 2600);
+        }
+
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 176) + 'px';
+        }
+
+        function handleInputKeydown(e) {
+            // Phones: Enter is a newline (the on-screen keyboard has no Shift), the send button sends.
+            if (e.key === 'Enter' && !e.shiftKey && window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 768) return;
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!isGenerating && e.target.value.trim().length > 0) {
+                    handleSendMessage(e);
+                }
+            }
+        }
+
+        function useStarterPrompt(promptText) {
+            const inputEl = document.getElementById('user-input');
+            inputEl.value = promptText;
+            autoResizeTextarea(inputEl);
+            document.getElementById('send-btn').disabled = false;
+            handleSendMessage(new Event('submit'));
+        }
+
+        function useImageStarterPrompt(promptText) {
+            if (!isImageMode) toggleImageMode();
+            useStarterPrompt(promptText);
+        }
+
+        function toggleImageMode() {
+            isImageMode = !isImageMode;
+            const btn = document.getElementById('image-mode-btn');
+            const label = document.getElementById('image-mode-label');
+            const inputEl = document.getElementById('user-input');
+
+            if (isImageMode) {
+                btn.classList.add('bg-amber-500/15', 'text-amber-600', 'dark:text-amber-400', 'ring-1', 'ring-amber-500/30');
+                btn.classList.remove('text-gray-500', 'dark:text-gray-400');
+                label.classList.remove('hidden');
+                inputEl.placeholder = "Describe an image for SlashChat to create...";
+                showToast('Image Generation Mode ON');
+            } else {
+                btn.classList.remove('bg-amber-500/15', 'text-amber-600', 'dark:text-amber-400', 'ring-1', 'ring-amber-500/30');
+                btn.classList.add('text-gray-500', 'dark:text-gray-400');
+                label.classList.add('hidden');
+                inputEl.placeholder = "Message SlashChat...";
+                showToast('Chat Mode ON');
+            }
+            inputEl.focus();
+        }
+
+        function toggleVoiceInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showToast('Voice input is not supported in this browser.');
+                return;
+            }
+
+            if (isRecording && recognition) {
+                recognition.stop();
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = true;
+            recognition.continuous = false;
+
+            const voiceBtn = document.getElementById('voice-btn');
+            const voiceIcon = document.getElementById('voice-icon');
+            const inputEl = document.getElementById('user-input');
+            const sendBtn = document.getElementById('send-btn');
+            const baseText = inputEl.value ? inputEl.value + ' ' : '';
+
+            recognition.onstart = () => {
+                isRecording = true;
+                voiceBtn.classList.add('bg-red-500/15', 'text-red-500', 'animate-pulse', 'ring-1', 'ring-red-500/40');
+                voiceBtn.classList.remove('text-gray-500', 'dark:text-gray-400');
+                voiceIcon.setAttribute('data-lucide', 'mic-off');
+                lucide.createIcons();
+                showToast('Listening... Speak now');
+            };
+
+            recognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                inputEl.value = baseText + transcript;
+                autoResizeTextarea(inputEl);
+                sendBtn.disabled = (inputEl.value.trim().length === 0 && !pend.length) || isGenerating;
+            };
+
+            recognition.onerror = (event) => {
+                if (event.error !== 'aborted') {
+                    showToast('Microphone error: ' + event.error);
+                }
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                voiceBtn.classList.remove('bg-red-500/15', 'text-red-500', 'animate-pulse', 'ring-1', 'ring-red-500/40');
+                voiceBtn.classList.add('text-gray-500', 'dark:text-gray-400');
+                voiceIcon.setAttribute('data-lucide', 'mic');
+                lucide.createIcons();
+                inputEl.focus();
+            };
+
+            recognition.start();
+        }
+
+        // ==========================================
+        // 4. CHAT STORAGE & MANAGEMENT
+        // ==========================================
+        function loadChatsFromStorage() {
+            try {
+                const raw = localStorage.getItem('slash_chats_v1');
+                chats = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                chats = [];
+            }
+            renderChatHistory();
+            if (chats.length > 0) {
+                selectChat(chats[0].id);
+            } else {
+                startNewChat();
+            }
+        }
+
+        function saveChatsToStorage() {
+            try {
+                localStorage.setItem('slash_chats_v1', JSON.stringify(chats));
+            } catch (e) {
+                chats.forEach(c => c.messages.forEach(m => { if (m.imgs) { delete m.imgs; m.text += ' [image dropped: browser storage full]'; } }));
+                try { localStorage.setItem('slash_chats_v1', JSON.stringify(chats)); } catch (e2) { console.warn('Could not save chat history to localStorage.'); }
+            }
+        }
+
+        function startNewChat() {
+            currentChatId = null;
+            document.getElementById('welcome-screen').classList.remove('hidden');
+            document.getElementById('messages-list').classList.add('hidden');
+            document.getElementById('messages-list').innerHTML = '';
+            renderChatHistory();
+            toggleSidebar(false);
+            document.getElementById('user-input').focus();
+        }
+
+        function selectChat(id) {
+            const chat = chats.find(c => c.id === id);
+            if (!chat) return;
+
+            currentChatId = id;
+            document.getElementById('welcome-screen').classList.add('hidden');
+            const messagesList = document.getElementById('messages-list');
+            messagesList.classList.remove('hidden');
+            messagesList.innerHTML = '';
+
+            chat.messages.forEach(msg => {
+                appendMessageToDOM(msg.role, msg.text, msg.sources || [], false, msg.imageUrl || null, msg.imgs || []);
+            });
+
+            renderChatHistory();
+            toggleSidebar(false);
+            scrollToBottom();
+        }
+
+        function deleteChat(e, id) {
+            e.stopPropagation();
+            chats = chats.filter(c => c.id !== id);
+            saveChatsToStorage();
+            if (currentChatId === id) {
+                if (chats.length > 0) {
+                    selectChat(chats[0].id);
+                } else {
+                    startNewChat();
+                }
+            } else {
+                renderChatHistory();
+            }
+        }
+
+        function clearAllChats() {
+            chats = [];
+            saveChatsToStorage();
+            startNewChat();
+            showToast('All chat history cleared');
+        }
+
+        function renderChatHistory() {
+            const listEl = document.getElementById('chat-history-list');
+            const q = ((document.getElementById('chat-search') || {}).value || '').toLowerCase().trim();
+            listEl.innerHTML = '';
+            if (chats.length === 0) {
+                listEl.innerHTML = `<div class="px-3 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">No conversations yet</div>`;
+                return;
+            }
+            const shown = chats.filter(c => !q || c.title.toLowerCase().includes(q) || c.messages.some(m => (m.text || '').toLowerCase().includes(q)));
+            if (!shown.length) {
+                listEl.innerHTML = `<div class="px-3 py-4 text-xs text-gray-400 dark:text-gray-500 text-center">No matches</div>`;
+                return;
+            }
+            shown.forEach(chat => {
+                const isActive = chat.id === currentChatId;
+                const item = document.createElement('div');
+                item.onclick = () => selectChat(chat.id);
+                item.ondblclick = ev => renameChat(ev, chat.id);
+                item.title = 'double-click to rename';
+                item.className = `group flex items-center justify-between px-3 py-2.5 rounded-xl text-sm cursor-pointer transition-colors ${
+                    isActive
+                        ? 'bg-gray-200/80 dark:bg-white/10 font-medium text-gray-900 dark:text-white'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200/50 dark:hover:bg-white/5'
+                }`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5 truncate pr-2">
+                        <i data-lucide="message-square" class="w-4 h-4 shrink-0 ${isActive ? 'text-gamma-500' : 'opacity-60'}"></i>
+                        <span class="truncate">${escapeHtml(chat.title)}</span>
+                    </div>
+                    <div class="flex items-center shrink-0">
+                        <button onclick="renameChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-gray-300/70 dark:hover:bg-white/10 text-gray-500 hover:text-gamma-500 transition-all" title="Rename chat">
+                            <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-gray-300/70 dark:hover:bg-white/10 text-gray-500 hover:text-red-500 transition-all" title="Delete chat">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        function renameChat(e, id) {
+            e.stopPropagation();
+            const c = chats.find(x => x.id === id); if (!c) return;
+            const t = prompt('rename chat:', c.title);
+            if (t && t.trim()) { c.title = t.trim().slice(0, 60); saveChatsToStorage(); renderChatHistory(); }
+        }
+
+        function exportChat() {
+            const c = chats.find(x => x.id === currentChatId);
+            if (!c) { showToast('Nothing to export yet'); return; }
+            const txt = c.messages.map(m => '**' + (m.role === 'user' ? 'you' : 'assistant') + '**\n\n' + (m.imgs && m.imgs.length ? '[+' + m.imgs.length + ' image(s)]\n\n' : '') + m.text).join('\n\n');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([txt], { type: 'text/markdown' }));
+            a.download = (c.title.replace(/\W+/g, '-') || 'chat') + '.md';
+            a.click();
+        }
+
+        // ==========================================
+        // 5. MESSAGE RENDERING & INTERACTIONS
+        // ==========================================
+        function appendMessageToDOM(role, text, sources = [], animate = true, imageUrl = null, imgs = []) {
+            const imgsHtml = (imgs || []).map(u => `<img src="${u}" class="max-h-48 max-w-full rounded-xl mb-2 block">`).join('');
+            const messagesList = document.getElementById('messages-list');
+            const wrapper = document.createElement('div');
+            wrapper.className = `flex gap-3 sm:gap-4 ${role === 'user' ? 'justify-end' : 'justify-start'} ${animate ? 'animate-fade-in' : ''}`;
+
+            if (role === 'user') {
+                wrapper.innerHTML = `
+                    <div class="max-w-[85%] sm:max-w-[75%] bg-gray-100 dark:bg-[#2f2f2f] text-gray-900 dark:text-gray-100 px-4 py-3 rounded-3xl rounded-br-lg text-sm sm:text-base leading-relaxed whitespace-pre-wrap shadow-2xs">${imgsHtml}${escapeHtml(text)}</div>
+                `;
+            } else {
+                const renderedHtml = text ? md(text) : '';
+                let imageHtml = '';
+                if (imageUrl) {
+                    const filename = `gamma-art-${Date.now()}.png`;
+                    imageHtml = `
+                        <div class="my-2 relative group inline-block max-w-full rounded-2xl overflow-hidden border border-gray-200/80 dark:border-white/10 shadow-md bg-gray-100 dark:bg-black/20">
+                            <img src="${imageUrl}" alt="Generated by SlashChat" class="max-h-[420px] w-auto object-contain rounded-2xl block" />
+                            <a href="${imageUrl}" download="${filename}" class="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity px-3 py-1.5 rounded-xl bg-gray-900/85 hover:bg-gray-900 text-white text-xs font-medium flex items-center gap-1.5 backdrop-blur-xs shadow-lg">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Download</span>
+                            </a>
+                        </div>
+                    `;
+                }
+
+                let sourcesHtml = '';
+
+                if (sources && sources.length > 0) {
+                    const uniqueSources = Array.from(new Map(sources.map(s => [s.uri, s])).values()).slice(0, 4);
+                    sourcesHtml = `
+                        <div class="mt-3 pt-3 border-t border-gray-200/70 dark:border-white/10">
+                            <div class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                <i data-lucide="globe" class="w-3 h-3"></i> Sources
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                ${uniqueSources.map(s => `
+                                    <a href="${escapeHtml(s.uri)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gamma-500/10 text-xs text-gray-700 dark:text-gray-300 hover:text-gamma-600 dark:hover:text-gamma-400 border border-gray-200/60 dark:border-white/10 transition-colors max-w-[220px] truncate">
+                                        <span class="truncate">${escapeHtml(s.title || new URL(s.uri).hostname)}</span>
+                                        <i data-lucide="external-link" class="w-3 h-3 shrink-0 opacity-60"></i>
+                                    </a>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                wrapper.innerHTML = `
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-gamma-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shrink-0 mt-0.5 shadow-xs">
+                        /
+                    </div>
+                    <div class="flex-1 min-w-0 max-w-full">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-semibold text-sm">SlashChat</span>
+                        </div>
+                        ${imageHtml}
+                        ${renderedHtml ? `<div class="markdown-body text-sm sm:text-base text-gray-800 dark:text-gray-200 break-words">${renderedHtml}</div>` : ''}
+                        ${sourcesHtml}
+                        ${text ? `
+                        <div class="flex items-center gap-1 mt-2">
+                            <button onclick="copyMessageText(this)" data-raw="${encodeURIComponent(text)}" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer" title="Copy response">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+
+            messagesList.appendChild(wrapper);
+            enhanceCodeBlocks(wrapper);
+            lucide.createIcons();
+            scrollToBottom();
+        }
+
+        function appendThinkingIndicator() {
+            const messagesList = document.getElementById('messages-list');
+            const thinkingEl = document.createElement('div');
+            thinkingEl.id = 'thinking-indicator';
+            thinkingEl.className = 'flex gap-3 sm:gap-4 justify-start';
+            thinkingEl.innerHTML = `
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-gamma-500 via-indigo-500 to-cyan-500 flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-xs">
+                    /
+                </div>
+                <div class="flex items-center gap-1.5 py-3 px-4 rounded-2xl bg-gray-100/80 dark:bg-white/5">
+                    <span class="w-2 h-2 rounded-full bg-gamma-500 dot-flashing"></span>
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 dot-flashing"></span>
+                    <span class="w-2 h-2 rounded-full bg-cyan-500 dot-flashing"></span>
+                </div>
+            `;
+            messagesList.appendChild(thinkingEl);
+            scrollToBottom();
+        }
+
+        function removeThinkingIndicator() {
+            const el = document.getElementById('thinking-indicator');
+            if (el) el.remove();
+        }
+
+        function enhanceCodeBlocks(container) {
+            const preBlocks = container.querySelectorAll('pre');
+            preBlocks.forEach(pre => {
+                if (pre.querySelector('.code-header')) return;
+                const codeEl = pre.querySelector('code');
+                const langMatch = codeEl?.className.match(/language-(\w+)/);
+                const fileMatch = codeEl?.className.match(/language-file:(\S+)/);
+                const fileName = fileMatch ? safeFileName(fileMatch[1]) : null;
+                const lang = fileName || (langMatch ? langMatch[1] : 'code');
+
+                const header = document.createElement('div');
+                header.className = 'code-header flex items-center justify-between px-4 py-1.5 bg-white/5 border-b border-white/10 text-xs text-gray-400 font-mono';
+                header.innerHTML = `
+                    <span class="flex items-center gap-1.5 min-w-0">${fileName ? '<i data-lucide="file-text" class="w-3.5 h-3.5 shrink-0"></i>' : ''}<span class="truncate">${escapeHtml(lang)}</span></span>
+                    <span class="flex items-center gap-3 shrink-0">
+                        ${fileName ? `<button type="button" class="download-file-btn flex items-center gap-1 text-gamma-300 hover:text-white transition-colors cursor-pointer"><i data-lucide="download" class="w-3.5 h-3.5"></i><span>Download</span></button>` : ''}
+                        <button type="button" class="copy-code-btn flex items-center gap-1 hover:text-white transition-colors cursor-pointer">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>Copy</span>
+                        </button>
+                    </span>
+                `;
+
+                header.querySelector('.copy-code-btn').addEventListener('click', () => {
+                    copyToClipboard(codeEl.innerText);
+                    showToast('Code copied to clipboard!');
+                });
+                if (fileName) {
+                    header.querySelector('.download-file-btn').addEventListener('click', () => {
+                        downloadTextFile(fileName, codeEl.textContent);
+                        showToast('Downloading ' + fileName);
+                    });
+                }
+
+                pre.insertBefore(header, codeEl);
+            });
+        }
+
+        // File downloads: pure browser Blob, no server, no bash.
+        function safeFileName(n) {
+            n = String(n || '').split(/[\\/]/).pop().replace(/[^\w.\-]+/g, '-').replace(/^[.\-]+/, '').slice(0, 80);
+            return n || 'file.txt';
+        }
+        function downloadTextFile(name, text) {
+            const ext = (name.split('.').pop() || '').toLowerCase();
+            const types = { html: 'text/html', htm: 'text/html', css: 'text/css', js: 'text/javascript', json: 'application/json', md: 'text/markdown', csv: 'text/csv', py: 'text/x-python', svg: 'image/svg+xml', xml: 'application/xml', yaml: 'text/yaml', yml: 'text/yaml' };
+            const blob = new Blob([text], { type: (types[ext] || 'text/plain') + ';charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+        }
+
+        function copyMessageText(btn) {
+            const rawText = decodeURIComponent(btn.getAttribute('data-raw'));
+            copyToClipboard(rawText);
+            showToast('Response copied to clipboard!');
+        }
+
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Copy failed', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ==========================================
+        // 6. PROVIDERS: puter.js / pollinations / openrouter / groq / gemini / gpt / claude
+        // ==========================================
+        const MODELS = {
+            puter: ["claude-sonnet-4-6","claude-haiku-4-5","google/gemini-2.5-flash","gpt-5.5","gpt-4o-mini"],
+            polli: ["openai","openai-fast","mistral","qwen-coder","deepseek","gemini-fast"],
+            groq: ["llama-3.3-70b-versatile","llama-3.1-8b-instant","openai/gpt-oss-120b","openai/gpt-oss-20b","meta-llama/llama-4-scout-17b-16e-instruct"],
+            gemini: ["gemini-2.5-flash","gemini-2.5-flash-lite","gemini-2.5-pro"],
+            openai: ["gpt-4o-mini","gpt-4.1-mini","gpt-4o","gpt-4.1"],
+            anthropic: ["claude-haiku-5-5","claude-sonnet-5-5","claude-opus-5-5"],
+            or: ["openrouter/free","deepseek/deepseek-chat-v3.1:free","meta-llama/llama-3.3-70b-instruct:free","google/gemma-3-27b-it:free","qwen/qwen3-coder:free"]
+        };
+        const ld = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d } catch (e) { return d } };
+        let cfg = Object.assign({ provider: 'puter', model: 'claude-sonnet-4-6', temp: 0.7, max: 2048, hist: 20, persona: 'Default', name: '', sys: 'You are a helpful, concise AI assistant.' }, ld('slash_cfg', {}));
+        const saveCfg = () => { try { localStorage.setItem('slash_cfg', JSON.stringify(cfg)) } catch (e) {} };
+        const keyName = p => p === 'or' ? 'slash_orkey' : 'slash_key_' + p;
+        const getKey = p => { try { return localStorage.getItem(keyName(p)) || '' } catch (e) { return '' } };
+        const setKey = (p, k) => { try { k ? localStorage.setItem(keyName(p), k) : localStorage.removeItem(keyName(p)) } catch (e) {} };
+        const orKey = () => getKey('or');
+        const KEYED = {
+            or:        { label: 'openrouter api key', url: 'https://openrouter.ai/keys', ph: 'sk-or-v1-...', note: 'stays in this browser only. model ids ending in :free cost nothing.', paid: false },
+            groq:      { label: 'groq api key', url: 'https://console.groq.com/keys', ph: 'gsk_...', note: 'stays in this browser only. groq has a free tier with rate limits.', paid: false },
+            gemini:    { label: 'gemini api key', url: 'https://aistudio.google.com/apikey', ph: 'AIza...', note: 'stays in this browser only. google ai studio has a free tier with rate limits.', paid: false },
+            openai:    { label: 'openai api key', url: 'https://platform.openai.com/api-keys', ph: 'sk-...', note: 'stays in this browser only. billed per token by openai.', paid: true },
+            anthropic: { label: 'anthropic api key', url: 'https://console.anthropic.com/settings/keys', ph: 'sk-ant-...', note: 'stays in this browser only. billed per token by anthropic.', paid: true }
+        };
+        const OAI = {
+            groq:   { url: 'https://api.groq.com/openai/v1/chat/completions', name: 'groq' },
+            gemini: { url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', name: 'gemini' },
+            openai: { url: 'https://api.openai.com/v1/chat/completions', name: 'openai' }
+        };
+        let pend = [];
+        function updateSendState() {
+            const i = document.getElementById('user-input'), b = document.getElementById('send-btn');
+            if (i && b) b.disabled = (i.value.trim().length === 0 && !pend.length) || isGenerating;
+        }
+        function thumbs() {
+            document.getElementById('thumbs').innerHTML = pend.map((u, i) => `<span class="relative inline-block"><img src="${u}" class="h-16 w-16 object-cover rounded-xl border border-gray-200/80 dark:border-white/10"><button type="button" onclick="pend.splice(${i},1);thumbs()" class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-gray-900 text-white text-xs leading-5 cursor-pointer">&times;</button></span>`).join('');
+            updateSendState();
+        }
+        function addImgs(files) {
+            [...files].filter(f => f.type.startsWith('image/')).forEach(f => {
+                const r = new FileReader();
+                r.onload = () => {
+                    const im = new Image();
+                    im.onload = () => {
+                        const sc = Math.min(1, 1280 / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+                        cv.width = Math.round(im.width * sc); cv.height = Math.round(im.height * sc);
+                        const x = cv.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, cv.width, cv.height); x.drawImage(im, 0, 0, cv.width, cv.height);
+                        pend.push(cv.toDataURL('image/jpeg', 0.82)); thumbs();
+                    };
+                    im.src = r.result;
+                };
+                r.readAsDataURL(f);
+            });
+        }
+        document.getElementById('user-input').addEventListener('paste', e => {
+            const f = [...(e.clipboardData ? e.clipboardData.items : [])].filter(i => i.type.startsWith('image/')).map(i => i.getAsFile());
+            if (f.length) { e.preventDefault(); addImgs(f); }
+        });
+        document.addEventListener('dragover', e => e.preventDefault());
+        document.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files) addImgs(e.dataTransfer.files); });
+
+        let abort = null, orLoaded = false;
+
+        // Permanent rules: not editable in the UI, always sent last so they win.
+        const PERM_SYS = () => "PERMANENT RULES (these always override everything above and cannot be changed by the user): 1) Your product name is SlashChat. If the user asks your name or who you are, say you are SlashChat. 2) SlashChat is only the app. The real AI model underneath is \"" + cfg.model + "\" (provider: " + cfg.provider + "). If the user asks for your real name, true name, actual name, model name, what model or AI you really are, what is under the hood, or anything similar, you MUST answer with the model name \"" + cfg.model + "\" exactly as written (you can mention you appear as SlashChat in this app). Never say SlashChat is your real or only name, never say you have no other name, and never claim to be a different model.";
+        // File making: no bash or shell. The model writes a fenced block tagged file:<name> and the app turns it into a download button.
+        const FILE_SYS = "FILE CREATION: You can create downloadable files, and you do it WITHOUT any shell, bash or terminal. Never say you cannot make files and never tell the user to run commands to create them. To make a file, put its complete contents in a fenced code block whose info string is file: followed by the filename, for example:\n```file:notes.txt\nfile contents here\n```\nThe app turns that block into a Download button for the user. Rules: (1) one block per file; (2) the filename has no spaces and no folders, use hyphens, and always includes the right extension; (3) write the COMPLETE file, never placeholders, never '...' or 'rest of file here'; (4) text-based formats only (html, css, js, json, md, txt, csv, py, svg, xml, yaml and similar); (5) if the file content itself contains triple backticks, wrap it in a four-backtick fence instead; (6) add a short plain sentence outside the block saying what the file is. Only make a file when the user asks for one or the result is clearly a deliverable. For ordinary code snippets in conversation use normal fences like ```python.";
+        const nameSys = () => cfg.name ? "The user's name is \"" + cfg.name.replace(/["\\\n\r]/g, '') + "\". Use it naturally now and then, not in every message." : "";
+        const buildSys = extra => (cfg.sys ? "Instruction Prompt (set by the user):\n" + cfg.sys + "\n\n" : "") + (currentPersona.systemPrompt ? currentPersona.systemPrompt + "\n\n" : "") + (nameSys() ? nameSys() + "\n\n" : "") + FILE_SYS + "\n\n" + (extra ? extra + "\n\n" : "") + PERM_SYS();
+
+        function fillModels() {
+            const sel = document.getElementById('model-select'), l = MODELS[cfg.provider].slice();
+            if (!l.includes(cfg.model)) l.unshift(cfg.model);
+            sel.innerHTML = l.map(m => `<option>${escapeHtml(m)}</option>`).join('') + "<option value='__c'>custom id ...</option>";
+            sel.value = cfg.model;
+        }
+        function loadORModels() {
+            if (orLoaded) return; orLoaded = true;
+            fetch('https://openrouter.ai/api/v1/models').then(r => r.json()).then(j => {
+                const ids = (j.data || []).map(m => m.id).filter(Boolean); if (!ids.length) return;
+                MODELS.or = ['openrouter/free'].concat(ids.filter(i => i.endsWith(':free')).sort(), ids.filter(i => !i.endsWith(':free')).sort());
+                if (cfg.provider === 'or') fillModels();
+            }).catch(() => { orLoaded = false });
+        }
+        document.addEventListener('change', e => {
+            if (e.target.id !== 'model-select') return;
+            let v = e.target.value;
+            if (v === '__c') v = (prompt('model id:', cfg.model) || '').trim() || cfg.model;
+            cfg.model = v; saveCfg(); fillModels();
+        });
+
+        const dlg = document.getElementById('dlg');
+        const provName = o => o.textContent.replace(/\s*\(.*\)\s*$/, '');
+        const provSub = o => ((o.textContent.match(/\(([^)]*)\)/) || [])[1] || '');
+        function syncProvUI() {
+            const sel = document.getElementById('s-prov'), o = sel.options[sel.selectedIndex]; if (!o) return;
+            const paid = !!(KEYED[o.value] && KEYED[o.value].paid), btn = document.getElementById('prov-btn');
+            btn.style.color = paid ? '#f5b301' : '';
+            document.getElementById('prov-btn-label').innerHTML = escapeHtml(provName(o)) + (paid ? ' <span class="ml-1 text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md" style="background:rgba(245,179,1,0.18);border:1px solid rgba(245,179,1,0.45)">PAID</span>' : '');
+        }
+        function buildProvMenu() {
+            const sel = document.getElementById('s-prov'), menu = document.getElementById('prov-menu'); menu.innerHTML = '';
+            [...sel.options].forEach(o => {
+                const paid = !!(KEYED[o.value] && KEYED[o.value].paid), on = o.value === sel.value, b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-left cursor-pointer hover:bg-gray-100 dark:hover:bg-white/10' + (on ? ' bg-gray-100 dark:bg-white/10' : '');
+                if (paid) b.style.color = '#f5b301';
+                b.innerHTML = '<span class="min-w-0"><span class="block ' + (paid ? 'font-semibold' : 'font-medium') + '">' + escapeHtml(provName(o)) + '</span><span class="block text-[11px] ' + (paid ? '' : 'text-gray-400') + '" style="' + (paid ? 'opacity:.75' : '') + '">' + escapeHtml(provSub(o)) + '</span></span>'
+                    + '<span class="flex items-center gap-1.5 shrink-0">' + (paid ? '<span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md" style="background:rgba(245,179,1,0.18);border:1px solid rgba(245,179,1,0.45)">PAID</span>' : '') + (on ? '<span>&#10003;</span>' : '') + '</span>';
+                b.onclick = () => { sel.value = o.value; orToggle(); closeProvMenu(); };
+                menu.appendChild(b);
+            });
+        }
+        function toggleProvMenu(e) { e.stopPropagation(); const m = document.getElementById('prov-menu'); if (m.classList.contains('hidden')) { buildProvMenu(); m.classList.remove('hidden'); } else m.classList.add('hidden'); }
+        function closeProvMenu() { const m = document.getElementById('prov-menu'); if (m) m.classList.add('hidden'); }
+        document.addEventListener('click', e => { if (!e.target.closest('#prov-dd')) closeProvMenu(); });
+        let tmpKeys = {}, lastProv = null;
+        function orToggle() {
+            const sel = document.getElementById('s-prov'), inp = document.getElementById('s-orkey'), p = sel.value, k = KEYED[p];
+            if (lastProv && KEYED[lastProv]) tmpKeys[lastProv] = inp.value;
+            document.getElementById('s-orbox').classList.toggle('hidden', !k);
+            sel.style.color = (k && k.paid) ? '#f5b301' : '';
+            if (k) {
+                document.getElementById('s-keylabel').textContent = k.label;
+                const a = document.getElementById('s-keylink'); a.href = k.url;
+                inp.placeholder = k.ph;
+                inp.value = (p in tmpKeys) ? tmpKeys[p] : getKey(p);
+                document.getElementById('s-keynote').textContent = k.note;
+                document.getElementById('s-paidnote').classList.toggle('hidden', !k.paid);
+            }
+            lastProv = p;
+            syncProvUI(); closeProvMenu();
+        }
+        function openSettings() {
+            tmpKeys = {}; lastProv = null; document.getElementById('s-prov').value = cfg.provider;
+            document.getElementById('s-name').value = cfg.name || '';
+            document.getElementById('s-sys').value = cfg.sys; document.getElementById('s-temp').value = cfg.temp;
+            document.getElementById('s-max').value = cfg.max; document.getElementById('s-hist').value = cfg.hist;
+            orToggle(); dlg.showModal();
+        }
+        function saveSettings() {
+            const np = document.getElementById('s-prov').value;
+            if (np !== cfg.provider) { cfg.provider = np; cfg.model = MODELS[np][0]; }
+            if (KEYED[np]) tmpKeys[np] = document.getElementById('s-orkey').value; Object.keys(tmpKeys).forEach(p => setKey(p, (tmpKeys[p] || '').trim())); tmpKeys = {}; lastProv = null;
+            cfg.name = document.getElementById('s-name').value.replace(/\s+/g, ' ').trim().slice(0, 60);
+            cfg.sys = document.getElementById('s-sys').value.trim();
+            cfg.temp = parseFloat(document.getElementById('s-temp').value); if (isNaN(cfg.temp)) cfg.temp = 0.7;
+            cfg.max = parseInt(document.getElementById('s-max').value) || 2048;
+            cfg.hist = parseInt(document.getElementById('s-hist').value) || 20;
+            saveCfg(); fillModels(); if (cfg.provider === 'or') loadORModels(); dlg.close(); showToast('Settings saved');
+        }
+        function stopGen() { if (abort) { abort.stop = true; abort.ctl.abort(); } }
+
+        async function viaPuter(msgs, on) {
+            if (!window.puter) throw new Error('puter.js did not load (offline?)');
+            const o = { model: cfg.model, stream: true, temperature: cfg.temp, max_tokens: cfg.max }; let r;
+            try { r = await puter.ai.chat(msgs, o); } catch (e) {
+                const lm = msgs[msgs.length - 1], im = Array.isArray(lm.content) && lm.content.find(p => p.type === 'image_url');
+                if (!im) throw e; r = await puter.ai.chat(lm.content[0].text, im.image_url.url, o);
+            }
+            if (!r || !r[Symbol.asyncIterator]) { const m = r && r.message && r.message.content; on(typeof r === 'string' ? r : (Array.isArray(m) ? m.map(x => x.text || '').join('') : m) || (r && r.text) || ''); return; }
+            for await (const p of r) { if (abort.stop) break; if (p && p.text) on(p.text); }
+        }
+        async function streamSSE(r, on) {
+            const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+            for (;;) {
+                const { done, value } = await rd.read(); if (done) return;
+                buf += dec.decode(value, { stream: true }); const ls = buf.split('\n'); buf = ls.pop();
+                for (const l of ls) {
+                    if (!l.startsWith('data:')) continue; const d = l.slice(5).trim(); if (d === '[DONE]') return;
+                    let j; try { j = JSON.parse(d) } catch (e) { continue }
+                    if (j.error) throw new Error(j.error.message || 'stream error');
+                    const t = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content; if (t) on(t);
+                }
+            }
+        }
+        async function viaPolli(msgs, on) {
+            let err;
+            for (const u of ['https://gen.pollinations.ai/v1/chat/completions', 'https://text.pollinations.ai/openai']) {
+                try {
+                    const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: abort.ctl.signal, body: JSON.stringify({ model: cfg.model, messages: msgs, temperature: cfg.temp, max_tokens: cfg.max, stream: true }) });
+                    if (!r.ok) { err = new Error('http ' + r.status + ' from ' + new URL(u).host + ' (free tier may need a key now, try puter or openrouter)'); continue; }
+                    return await streamSSE(r, on);
+                } catch (e) { if (e.name === 'AbortError') return; err = e; }
+            }
+            throw err || new Error('request failed');
+        }
+        async function viaOR(msgs, on) {
+            const k = orKey(); if (!k) throw new Error('no openrouter key set. open settings, pick openrouter, paste your key');
+            let r;
+            try {
+                r = await fetch('https://openrouter.ai/api/v1/chat/completions', { method: 'POST', signal: abort.ctl.signal,
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k, 'HTTP-Referer': (location.origin && location.origin !== 'null') ? location.origin : 'https://slashchat.local', 'X-Title': 'SlashChat' },
+                    body: JSON.stringify({ model: cfg.model, messages: msgs, temperature: cfg.temp, max_tokens: cfg.max, stream: true }) });
+            } catch (e) { if (e.name === 'AbortError') return; throw e; }
+            if (!r.ok) {
+                let m = ''; try { const j = await r.json(); m = (j.error && (j.error.message || j.error)) || ''; } catch (e) {}
+                throw new Error('openrouter http ' + r.status + (m ? ': ' + (typeof m === 'string' ? m : JSON.stringify(m)) : '') + (r.status === 401 ? ' (bad key?)' : r.status === 402 ? ' (out of credits, try a :free model)' : r.status === 429 ? ' (rate limited, wait or try another model)' : ''));
+            }
+            try { await streamSSE(r, on); } catch (e) { if (e.name !== 'AbortError') throw e; }
+        }
+
+        async function viaOAI(p, msgs, on) {
+            const k = getKey(p), c = OAI[p];
+            if (!k) throw new Error('no ' + c.name + ' key set. open settings, pick ' + c.name + ', paste your key');
+            const body = { model: cfg.model, messages: msgs, stream: true };
+            if (p === 'openai') {
+                body.max_completion_tokens = cfg.max;
+                if (!/^(gpt-5|o\d)/.test(cfg.model)) body.temperature = cfg.temp;
+            } else { body.max_tokens = cfg.max; body.temperature = cfg.temp; }
+            let r;
+            try { r = await fetch(c.url, { method: 'POST', signal: abort.ctl.signal, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + k }, body: JSON.stringify(body) }); }
+            catch (e) { if (e.name === 'AbortError') return; throw e; }
+            if (!r.ok) {
+                let m = ''; try { const j = await r.json(); const er = Array.isArray(j) ? j[0] : j; m = (er.error && (er.error.message || er.error)) || ''; } catch (e) {}
+                throw new Error(c.name + ' http ' + r.status + (m ? ': ' + (typeof m === 'string' ? m : JSON.stringify(m)) : '') + (r.status === 401 ? ' (bad key?)' : r.status === 429 ? ' (rate limited or out of credit)' : ''));
+            }
+            try { await streamSSE(r, on); } catch (e) { if (e.name !== 'AbortError') throw e; }
+        }
+        const viaGroq = (m, on) => viaOAI('groq', m, on), viaGemini = (m, on) => viaOAI('gemini', m, on), viaOpenAI = (m, on) => viaOAI('openai', m, on);
+        async function viaAnthropic(msgs, on) {
+            const k = getKey('anthropic'); if (!k) throw new Error('no anthropic key set. open settings, pick claude / anthropic, paste your key');
+            const sys = msgs.filter(m => m.role === 'system').map(m => m.content).join('\n\n');
+            const conv = msgs.filter(m => m.role !== 'system').map(m => {
+                if (!Array.isArray(m.content)) return { role: m.role, content: m.content };
+                return { role: m.role, content: m.content.map(part => {
+                    if (part.type !== 'image_url') return part;
+                    const mt = /^data:([^;]+);base64,(.*)$/.exec(part.image_url.url) || [];
+                    return { type: 'image', source: { type: 'base64', media_type: mt[1] || 'image/jpeg', data: mt[2] || '' } };
+                }) };
+            });
+            let r;
+            try {
+                r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', signal: abort.ctl.signal,
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': k, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                    body: JSON.stringify({ model: cfg.model, system: sys, messages: conv, max_tokens: cfg.max, temperature: Math.min(1, cfg.temp), stream: true }) });
+            } catch (e) { if (e.name === 'AbortError') return; throw e; }
+            if (!r.ok) {
+                let m = ''; try { const j = await r.json(); m = (j.error && (j.error.message || j.error)) || ''; } catch (e) {}
+                throw new Error('anthropic http ' + r.status + (m ? ': ' + (typeof m === 'string' ? m : JSON.stringify(m)) : '') + (r.status === 401 ? ' (bad key?)' : r.status === 429 ? ' (rate limited)' : ''));
+            }
+            try {
+                const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+                for (;;) {
+                    const { done, value } = await rd.read(); if (done) return;
+                    buf += dec.decode(value, { stream: true }); const ls = buf.split('\n'); buf = ls.pop();
+                    for (const l of ls) {
+                        if (!l.startsWith('data:')) continue; let j; try { j = JSON.parse(l.slice(5).trim()) } catch (e) { continue }
+                        if (j.type === 'error') throw new Error((j.error && j.error.message) || 'stream error');
+                        if (j.type === 'content_block_delta' && j.delta && j.delta.text) on(j.delta.text);
+                        if (j.type === 'message_stop') return;
+                    }
+                }
+            } catch (e) { if (e.name !== 'AbortError') throw e; }
+        }
+
+        async function handleSendMessage(e) {
+            if (e) e.preventDefault();
+            if (isGenerating) return;
+            if (isRecording && recognition) recognition.stop();
+            const inputEl = document.getElementById('user-input'), sendBtn = document.getElementById('send-btn'), stopBtn = document.getElementById('stop-btn');
+            let userText = inputEl.value.trim();
+            if (!userText && !pend.length) return;
+            if (!userText) userText = 'describe this image.';
+            const imgs = pend; pend = []; thumbs();
+            inputEl.value = ''; inputEl.style.height = 'auto'; sendBtn.disabled = true; isGenerating = true;
+
+            if (!currentChatId) {
+                currentChatId = 'chat_' + Date.now();
+                chats.unshift({ id: currentChatId, title: userText.slice(0, 38) + (userText.length > 38 ? '...' : ''), messages: [], updatedAt: Date.now() });
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('messages-list').classList.remove('hidden');
+            }
+            const activeChat = chats.find(c => c.id === currentChatId);
+            activeChat.messages.push(imgs.length ? { role: 'user', text: userText, imgs } : { role: 'user', text: userText });
+            activeChat.updatedAt = Date.now();
+            saveChatsToStorage(); renderChatHistory();
+            appendMessageToDOM('user', userText, [], true, null, imgs); appendThinkingIndicator();
+            stopBtn.classList.remove('hidden');
+            abort = { stop: false, ctl: new AbortController() };
+            const sl = activeChat.messages.slice(-cfg.hist), keep = sl.map((m, i) => m.imgs && m.imgs.length ? i : -1).filter(i => i >= 0).slice(-2);
+            const hist = sl.map((m, i) => keep.includes(i) ? { role: 'user', content: [{ type: 'text', text: m.text }].concat(m.imgs.map(u => ({ type: 'image_url', image_url: { url: u } }))) } : { role: m.role === 'user' ? 'user' : 'assistant', content: m.text });
+            const msgs = [{ role: 'system', content: buildSys() }].concat(hist);
+            let acc = '', bubble = null, errMsg = '';
+            const list = document.getElementById('messages-list');
+            const on = t => {
+                acc += t;
+                if (!bubble) { removeThinkingIndicator(); appendMessageToDOM('model', acc, [], true); bubble = list.lastElementChild; return; }
+                const mb = bubble.querySelector('.markdown-body');
+                if (!mb) { bubble.remove(); appendMessageToDOM('model', acc, [], false); bubble = list.lastElementChild; }
+                else { mb.innerHTML = md(acc); scrollToBottom(); }
+            };
+            try { await ({ puter: viaPuter, polli: viaPolli, or: viaOR, groq: viaGroq, gemini: viaGemini, openai: viaOpenAI, anthropic: viaAnthropic }[cfg.provider] || viaPuter)(msgs, on); }
+            catch (err) { errMsg = (err && err.message) || JSON.stringify(err); }
+            removeThinkingIndicator();
+            if (bubble) bubble.remove();
+            if (acc.trim()) {
+                activeChat.messages.push({ role: 'model', text: acc });
+                activeChat.updatedAt = Date.now(); saveChatsToStorage();
+                appendMessageToDOM('model', acc, [], false);
+                if (errMsg) showToast('stream error: ' + errMsg);
+            } else {
+                appendMessageToDOM('model', '⚠️ ' + (errMsg || '(empty reply)'), [], false);
+            }
+            isGenerating = false; abort = null; stopBtn.classList.add('hidden');
+            sendBtn.disabled = inputEl.value.trim().length === 0;
+            inputEl.focus();
+        }
+    </script>
+</body>
+</html>
